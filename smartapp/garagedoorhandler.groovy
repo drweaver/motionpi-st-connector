@@ -30,8 +30,8 @@ preferences {
 
 metadata {
 	definition (name: "Garage Door", namespace: "shaneweaver", author: "Shane Weaver") {
-		capability "Refresh"
-        capability "Button"
+		//capability "Refresh"
+        //capability "Button"
         capability "Contact Sensor"
         
         attribute "frontdoor_1", "string"
@@ -41,27 +41,34 @@ metadata {
         command "operate"
 	}
 
-	simulator {
+	//simulator {
 		// TODO
-	}
+	//}
 
-	tiles {
-        standardTile("garageState", "device.contact", width: 3, height: 2) {
-			state "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
-			state "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-		}
+	tiles(scale: 2) {
+        //standardTile("garageState", "device.contact", width: 6, height: 5, decoration: "flat") {
+		//	state "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+		//	state "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
+		//}
+        
+        multiAttributeTile(name:"garageState", type:"generic", width:6, height:4) {
+    		tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
+      			attributeState "open", label: '${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
+      			attributeState "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
+    		}
+  		}
 
-        standardTile("frontdoor_1State", "device.frontdoor_1", width: 1, height: 1) {
+        standardTile("frontdoor_1State", "device.frontdoor_1", width: 2, height: 2) {
 			state "closed", label:"Front 1", icon:"st.contact.contact.closed", backgroundColor:"#79b821"
 			state "open", label:"Front 1", icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
 		}
         
-        standardTile("frontdoor_2State", "device.frontdoor_2", width: 1, height: 1) {
+        standardTile("frontdoor_2State", "device.frontdoor_2", width: 2, height: 2) {
 			state "closed", label:"Front 2", icon:"st.contact.contact.closed", backgroundColor:"#79b821"
 			state "open", label:"Front 2", icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
 		}
         
-        standardTile("sidedoorState", "device.sidedoor", width: 1, height: 1) {
+        standardTile("sidedoorState", "device.sidedoor", width: 2, height: 2) {
 			state "closed", label:"Side", icon:"st.contact.contact.closed", backgroundColor:"#79b821"
 			state "open", label:"Side", icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
 		}
