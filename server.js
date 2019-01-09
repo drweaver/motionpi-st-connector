@@ -2,9 +2,10 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const mqtt = require('./lib/api/mqtt');
+const mqtt = require('./lib/mqtt');
 const request = require('request');
-const log = require('./lib/local/log');
+const log = require('./lib/log');
+const _ = require('underscore');
 
 const app = module.exports = express();
 app.use(bodyParser.json());
@@ -33,49 +34,30 @@ app.post('/', function(req, response) {
 
 app.subscribe('/', function(req, response) {
     log.info('SUBSCRIBE called');
-
-    //TODO: Check Auth
-
     log.info("HOST: " + req.get("HOST"));
     log.info("CALLBACK: " + req.get("CALLBACK"));
     let uri = req.get("CALLBACK");
     uri = uri.substring(1,uri.length-1);
     log.info("URI = " + uri);
     response.status(202).send();
-    mqtt.setCallback( function(device, statusAll) {
-        let garage = "closed";
-        Object.values(statusAll).forEach(value => {
-            if( value !== "closed" ) {
-                garage = "open";
-            }
-          });
-        let body = {doorId: device, status: statusAll[device], garage: garage };
-        log.info("Sending callback for device " + device + " to " + uri);
-        request.post({ uri: uri, json: true, body: body}, function (error, response, body) {
-            if( error ) log.info('error:', error); // Print the error if one occurred
-            log.info('statusCode:', response && response.statusCode); // Print the response status code if a response was received
-          });
-    });
+    mqtt.setCallback( subscribeCallback );
     //send updated status for all devices
-    let garage = "closed";
     var statusAll = mqtt.getStatusAll();
-    Object.values(statusAll).forEach(value => {
-        if( value !== "closed" ) {
-            garage = "open";
-        }
-      });
-      Object.entries(statusAll).forEach(entry => {
-        let key = entry[0];
-        let value = entry[1];
-        let body = {doorId: key, status: value, garage: garage };
-        log.info("Sending callback for device " + key + " to " + uri);
-        request.post({ uri: uri, json: true, body: body}, function (error, response, body) {
-            if(error) log.info('error:', error); // Print the error if one occurred
-            log.info('statusCode:', response && response.statusCode); // Print the response status code if a response was received
-            log.info('body:', body); // Print the HTML for the Google homepage.
-          });
-      });
+    _.each(_.keys(statusAll), device=> {
+        subscribeCallback(device, statusAll);
+    });
 });
+
+function subscribeCallback(device, statusAll) {
+    let garage = _.every(_.values(statusAll), v=>{v==="closed"}) ? "closed" : "open";
+    let body = {doorId: device, status: statusAll[device], garage: garage };
+    log.info("Sending callback for device " + device + " to " + uri);
+    request.post({ uri: uri, json: true, body: body}, function (error, response, body) {
+        if( error ) log.info('error:', error); 
+        log.info('statusCode:', response && response.statusCode); 
+        log.info('body:', body); 
+      });
+}
 
 app.listen(3003);
 log.info('Open: http://127.0.0.1:3003');

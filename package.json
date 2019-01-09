@@ -1,7 +1,8 @@
 {
-  "name": "garage-control-smartthings-interface",
+  "name": "garage-control-smartthings-connector",
   "version": "1.0.0",
   "description": "SmartThings device integration for Garage Control",
+  "repository": "github:drweaver/garage-control-st-connector",
   "main": "server.js",
   "author": "Shane Weaver",
   "license": "ISC",
@@ -11,6 +12,7 @@
     "express": "^4.15.4",
     "request": "^2.81.0",
     "request-promise": "^4.2.1",
-    "mqtt":"^2.3.1"
+    "mqtt":"^2.3.1",
+    "underscore":"^1.9.1"
   }
 }
