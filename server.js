@@ -40,15 +40,15 @@ app.subscribe('/', function(req, response) {
     uri = uri.substring(1,uri.length-1);
     log.info("URI = " + uri);
     response.status(202).send();
-    mqtt.setCallback( subscribeCallback );
+    mqtt.setCallback( (d,s)=>{subscribeCallback(uri,d,s)} );
     //send updated status for all devices
     var statusAll = mqtt.getStatusAll();
     _.each(_.keys(statusAll), device=> {
-        subscribeCallback(device, statusAll);
+        subscribeCallback(uri, device, statusAll);
     });
 });
 
-function subscribeCallback(device, statusAll) {
+function subscribeCallback(uri, device, statusAll) {
     let garage = _.every(_.values(statusAll), v=>{v==="closed"}) ? "closed" : "open";
     let body = {doorId: device, status: statusAll[device], garage: garage };
     log.info("Sending callback for device " + device + " to " + uri);
