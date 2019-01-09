@@ -49,7 +49,7 @@ app.subscribe('/', function(req, response) {
 });
 
 function subscribeCallback(uri, device, statusAll) {
-    let garage = _.every(_.values(statusAll), v=>{v==="closed"}) ? "closed" : "open";
+    let garage = _.every(_.values(statusAll), v=>{return v==="closed"}) ? "closed" : "open";
     let body = {doorId: device, status: statusAll[device], garage: garage };
     log.info("Sending callback for device " + device + " to " + uri);
     request.post({ uri: uri, json: true, body: body}, function (error, response, body) {
