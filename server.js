@@ -13,16 +13,16 @@ app.post('/', function(req, response) {
     let evt = req.body;
     switch (evt.action) {
 
-        case 'status': {
-            log.trace(`REQUEST: ${JSON.stringify(evt, null, 2)}`);
-            log.response(response, {status: mqtt.getStatus(evt.doorId), doorId: evt.doorId});
-            break;
-        }
+        //case 'status': {
+        //    log.trace(`REQUEST: ${JSON.stringify(evt, null, 2)}`);
+        //    log.response(response, {status: mqtt.getStatus(evt.doorId), doorId: evt.doorId});
+        //    break;
+        //}
 
         case 'operate': {
             log.trace(`REQUEST: ${JSON.stringify(evt, null, 2)}`);
             mqtt.operate(evt.doorId);
-            log.response(response, {status: mqtt.getStatus(evt.doorId), doorId: evt.doorId});
+            response.status(202).sent();
             break;
         }
 
