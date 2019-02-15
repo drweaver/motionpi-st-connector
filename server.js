@@ -22,7 +22,7 @@ app.post('/', function(req, response) {
         case 'operate': {
             log.trace(`REQUEST: ${JSON.stringify(evt, null, 2)}`);
             mqtt.operate(evt.doorId);
-            response.status(202).sent();
+            response.status(202).send();
             break;
         }
 
