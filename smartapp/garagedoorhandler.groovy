@@ -24,32 +24,26 @@ preferences {
         input("ip", "string", title:"IP Address", description: "192.168.0.55", defaultValue: "192.168.0.55" ,required: true, displayDuringSetup: true)
         input("port", "string", title:"Port", description: "3003", defaultValue: "3003" , required: true, displayDuringSetup: true)
         input("mac", "string", title:"Mac Address", description: "74867ADB74E6", defaultValue: "74867ADB74E6" , required: true, displayDuringSetup: true)
-        input("doorId", "string", title:"Door Id", description: "Door Id", defaultValue: "door", required:true, displayDuringSetup: true)
-        input("auth", "string", title:"Auth Code", description: "auth code", defaultValue: "abc123" , required: true, displayDuringSetup: true)
 }
 
 metadata {
 	definition (name: "Garage Door", namespace: "shaneweaver", author: "Shane Weaver") {
-		//capability "Refresh"
-        //capability "Button"
+		
         capability "Contact Sensor"
+        capability "Motion Sensor"
+        capability "Refresh"
+        capability "Door Control"
         
         attribute "frontdoor_1", "string"
         attribute "frontdoor_2", "string"
         attribute "sidedoor", "string"
         
-        command "operate"
+        attribute "connection", "string"
+        
+        command "frontdoor_1Operate"
 	}
 
-	//simulator {
-		// TODO
-	//}
-
 	tiles(scale: 2) {
-        //standardTile("garageState", "device.contact", width: 6, height: 5, decoration: "flat") {
-		//	state "closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821"
-		//	state "open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
-		//}
         
         multiAttributeTile(name:"garageState", type:"generic", width:6, height:4) {
     		tileAttribute("device.contact", key: "PRIMARY_CONTROL") {
@@ -59,8 +53,8 @@ metadata {
   		}
 
         standardTile("frontdoor_1State", "device.frontdoor_1", width: 2, height: 2) {
-			state "closed", label:"Front 1", icon:"st.contact.contact.closed", backgroundColor:"#79b821"
-			state "open", label:"Front 1", icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
+			state "closed", label:"Front 1", icon:"st.contact.contact.closed", backgroundColor:"#79b821", action: "frontdoor_1Operate"
+			state "open", label:"Front 1", icon:"st.contact.contact.open", backgroundColor:"#ffa81e", action: "frontdoor_1Operate"
 		}
         
         standardTile("frontdoor_2State", "device.frontdoor_2", width: 2, height: 2) {
@@ -73,16 +67,23 @@ metadata {
 			state "open", label:"Side", icon:"st.contact.contact.open", backgroundColor:"#ffa81e"
 		}
         
-        // standardTile("operate", "device.button", inactiveLabel: false, decoration: "flat") {
-        //	state "default", action:"operate", label: "Operate", displayName: "Operate"
-        // }
+        standardTile("motion", "device.motion", width: 2, height: 2) {
+			state "inactive", label:'${name}', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
+			state "active", label:'${name}', icon:"st.motion.motion.active", backgroundColor:"#00A0DC"
+		}
+        
+        standardTile("connectionState", "device.connection", width: 2, height: 2) {
+        	state "online", label: "Online", icon:"st.Health & Wellness.health9",backgroundColor: "#ffffff"
+            state "offline", label: "Offline", icon:"st.Health & Wellness.health9",backgroundColor: "#cccccc"
+            state "unavailable", label: "Unavailable", icon:"st.Health & Wellness.health9",backgroundColor: "#cccccc"
+        }
 
-        // standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
-        //   	state "default", action:"refresh", label: "Refresh", displayName: "Refresh"
-        //  }
+        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+          	state "default", action:"refresh", label: "Refresh", displayName: "Refresh", icon: "st.secondary.refresh-icon"
+        }
 
         main "garageState"
-        details(["garageState", "frontdoor_1State", "frontdoor_2State", "sidedoorState"])
+        details(["garageState", "frontdoor_1State", "frontdoor_2State", "sidedoorState", "motion", "connectionState", "refresh"])
     }
 }
 
@@ -93,52 +94,74 @@ def parse(String description) {
     log.debug "description: $description"
     
 	try {
-    def map = [:]
-    def descMap = parseDescriptionAsMap(description)
-    log.debug "descMap: ${descMap}"
-    
-    def body = new String(descMap["body"].decodeBase64())
-    log.debug "body: ${body}"
-    
-    def slurper = new JsonSlurper()
-    def result = slurper.parseText(body)
-    
-    log.debug "result: ${result}"
+    	if( description?.endsWith("body:") ) {
+        	log.debug "Empty body, ending parse"
+            return;
+        }
+        def map = [:]
+        def descMap = parseDescriptionAsMap(description)
+        log.debug "descMap: ${descMap}"
 
-    if( result.containsKey("status") ) {
-        log.debug "creating event for doorId: ${result.doorId} status: ${result.status}"
-        def evt = createEvent(name: result.doorId, value: result.status)
-        log.debug "creating event for garage status: ${result.garage}"
-        def garage = createEvent(name: "contact", value: result.garage)
-        return [evt,garage];
-    }
+        def body = new String(descMap["body"].decodeBase64())
+        log.debug "body: ${body}"
+
+        def slurper = new JsonSlurper()
+        def result = slurper.parseText(body)
+
+        log.debug "result: ${result}"
+
+        def events = [];
+
+        if( result?.motion != null && result.motion != device.currentValue("motion") )
+            events.add( createEvent(name: "motion", value: result.motion ));
+        if( result?.status != null && result.status != device.currentValue("status") )
+            events.add( createEvent(name: "status", value: result.status ));
+        if( result?.state != null ) {
+            def anyOpen = false;
+            result.state.each { doorId, state ->
+                if( device.currentValue(doorId) != state )
+                    events.add( createEvent(name: doorId, value: state) );
+                // if( doorId == "frontdoor_1" && device.currentValue("door") != state )
+                //     events.add( createEvent(name: "door", value: state ));
+                if( state != "closed" )
+                    anyOpen = true;
+            }
+            def contact = anyOpen ? "open" : "closed";
+            if( contact != device.currentValue("contact") )
+                createEvent(name: "contact", value: contact );
+        }
+
+        return events;
+
     } catch( Exception ex) {
-      log.debug "exception in parse"
+        log.debug "exception in parse"
     }
  	
 }
 
 // handle commands
-def poll() {
-	log.debug "Executing 'poll'"
-    subscribeAction()
+def frontdoor_1Operate() {
+	operate("frontdoor_1");
+}
+
+def open() {
+    if( device.currentValue("frontdoor_1") != "open" )
+        frontdoor_1Operate();
+}
+
+def close() { 
+    if( device.currentValue("frontdoor_1") != "closed" ) 
+        frontdoor_1Operate();
 }
 
 def refresh() {
-	// sendEvent(name: "switch", value: "off")
 	log.debug "Executing 'refresh'"
-    poll()
-}
-
-def operate(){
-	log.debug "Operate was pressed"
-    //postAction("operate")
     subscribeAction()
 }
 
-// Get door status
-def getStatus() {
-    postAction("status")
+def operate(doorId){
+	log.debug "Operate was pressed for ${doorId}"
+    postAction("operate", doorId)
 }
 
 def installed() {
@@ -159,19 +182,16 @@ def updated() {
 
 // ------------------------------------------------------------------
 
-private postAction(action){
+private postAction(action, doorId){
   //setDeviceNetworkId(ip,port)  
   
   def hubAction = new physicalgraph.device.HubAction(
     method: "POST",
-    // path: uri,
     headers: getHeader(),
-    body: ["auth": auth,"doorId": doorId,"action": action]
-  )//,delayAction(1000), refresh()]
+    body: ["doorId": doorId,"action": action]
+  )
   log.debug("Executing hubAction on " + getHostAddress())
-  //log.debug hubAction
   sendHubCommand(hubAction)
-  //hubAction    
 }
 
 private subscribeAction(callbackPath="") {
