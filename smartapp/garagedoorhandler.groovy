@@ -128,7 +128,7 @@ def parse(String description) {
             }
             def contact = anyOpen ? "open" : "closed";
             if( contact != device.currentValue("contact") )
-                createEvent(name: "contact", value: contact );
+                events.add( createEvent(name: "contact", value: contact ) );
         }
 
         return events;
