@@ -9,22 +9,6 @@ const _ = require('underscore');
 
 const app = module.exports = express();
 app.use(bodyParser.json());
-app.post('/', function(req, response) {
-    let evt = req.body;
-    switch (evt.action) {
-
-        case 'operate': {
-            log.trace(`REQUEST: ${JSON.stringify(evt, null, 2)}`);
-            mqtt.operate(evt.doorId);
-            response.status(202).send();
-            break;
-        }
-
-        default: {
-            console.log(`Action ${evt.action} not supported`);
-        }
-    }
-});
 
 app.subscribe('/', function(req, response) {
     log.info('SUBSCRIBE called');
@@ -48,5 +32,5 @@ function subscribeCallback(uri, data) {
       });
 }
 
-app.listen(3003);
-log.info('Open: http://127.0.0.1:3003');
+app.listen(5003);
+log.info('Open: http://127.0.0.1:5003');
