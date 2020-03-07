@@ -1,5 +1,10 @@
 from gpiozero import MotionSensor
 import time
+import os
+
+device = os.environ['MOTION_DEVICE']
+print("MOTION_DEVICE = " + device)
+topic = "home/"+device+"/motion"
 
 last_motion = None
 
@@ -20,20 +25,20 @@ mqttc.on_connect = on_connect
 mqttc.on_publish = on_publish
 #mqttc.on_subscribe = on_subscribe
 
-mqttc.will_set("home/kitchen/motion", "inactive")
+mqttc.will_set(topic, "inactive")
 
-mqttc.connect("192.168.0.28")
+mqttc.connect("mqtt")
 mqttc.loop_start()
 
 
 def when_motion():
   global last_motion
-  if last_motion == None: mqttc.publish("home/kitchen/motion", "active")
+  if last_motion == None: mqttc.publish(topic, "active")
   last_motion = time.time()
   print("last_motion = " + str(last_motion))
 
 def when_no_motion():
-  mqttc.publish("home/kitchen/motion", "inactive")
+  mqttc.publish(topic, "inactive")
 
 pir.when_motion = when_motion
 #pir.when_no_motion = when_no_motion
