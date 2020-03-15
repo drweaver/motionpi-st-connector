@@ -8,8 +8,6 @@ topic = "home/"+device+"/motion"
 
 last_motion = None
 
-pir = MotionSensor(4)
-
 import paho.mqtt.client as mqtt
 
 def on_connect(client, userdata, flags, rc):
@@ -40,6 +38,7 @@ def when_motion():
 def when_no_motion():
   mqttc.publish(topic, "inactive")
 
+pir = MotionSensor(4)
 pir.when_motion = when_motion
 #pir.when_no_motion = when_no_motion
 
