@@ -3,9 +3,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mqtt = require('./lib/mqtt');
-const request = require('retry-request', {
-  request: require('request')
-});
+const request = require('request');
 const log = require('./lib/log');
 const _ = require('underscore');
 
@@ -27,7 +25,7 @@ app.subscribe('/', function(req, response) {
 
 function subscribeCallback(uri, data) {
     log.info("Sending callback to " + uri);
-    request({ method: 'POST', uri: uri, json: true, body: data, timeout: 2000}, {retries:6}, function (error, response, body) {
+    request.post({ uri: uri, json: true, body: data, timeout: 2000}, function (error, response, body) {
         if( error ) log.info('error:', error); 
         log.info('statusCode:', response && response.statusCode); 
         log.info('body:', body); 
