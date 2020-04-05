@@ -31,12 +31,12 @@ mqttc.loop_start()
 
 def when_motion():
   global last_motion
-  if last_motion == None: mqttc.publish(topic, "active")
+  if last_motion == None: mqttc.publish(topic, payload="active", qos=1)
   last_motion = time.time()
   print("last_motion = " + str(last_motion))
 
 def when_no_motion():
-  mqttc.publish(topic, "inactive")
+  mqttc.publish(topic, "inactive", payload="active", qos=1)
 
 pir = MotionSensor(4)
 pir.when_motion = when_motion
