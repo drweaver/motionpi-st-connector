@@ -23,7 +23,7 @@ mqttc.on_connect = on_connect
 mqttc.on_publish = on_publish
 #mqttc.on_subscribe = on_subscribe
 
-mqttc.will_set(topic, "inactive")
+mqttc.will_set(topic, payload="inactive", qos=1)
 
 mqttc.connect("mqtt")
 mqttc.loop_start()
@@ -36,7 +36,7 @@ def when_motion():
   print("last_motion = " + str(last_motion))
 
 def when_no_motion():
-  mqttc.publish(topic, "inactive", payload="active", qos=1)
+  mqttc.publish(topic, payload="inactive", qos=1)
 
 pir = MotionSensor(4)
 pir.when_motion = when_motion
