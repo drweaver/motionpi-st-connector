@@ -68,7 +68,10 @@ def parse(String description) {
 
         if( result.containsKey("motion") ) {
             log.debug "creating event for status: ${result.motion}"
-            return createEvent(name: "motion", value: result.motion)
+            //Expect motion sensor to be providing an update every 5 seconds if motion is active
+            // if we don't get the inactive message, at least fail graciously 
+            if( result.motion == "active") runIn( 31, setMotionInactive );
+            return createEvent(name: "motion", value: result.motion);
         }
 
 
@@ -81,6 +84,11 @@ def parse(String description) {
 }
 
 // handle commands
+
+def refresh() {
+	log.debug "Executing 'refresh'"
+    subscribeAction()
+}
 
 def installed() {
 	log.debug "Executing 'installed'"
@@ -95,22 +103,13 @@ def updated() {
     device.deviceNetworkId = mac;
 }
 
-
+def setMotionInactive() {
+	log.debug "Executing 'setMotionInactive'"
+    sendEvent(name: "motion", value: "inactive");
+}
 
 
 // ------------------------------------------------------------------
-
-private postAction(action, doorId){
-  //setDeviceNetworkId(ip,port)  
-  
-  def hubAction = new physicalgraph.device.HubAction(
-    method: "POST",
-    headers: getHeader(),
-    body: ["doorId": doorId,"action": action]
-  )
-  log.debug("Executing hubAction on " + getHostAddress())
-  sendHubCommand(hubAction)
-}
 
 private subscribeAction(callbackPath="") {
   //setDeviceNetworkId(ip,port)
@@ -207,4 +206,3 @@ private String convertPortToHex(port) {
 	String hexport = port.toString().format( '%04x', port.toInteger() )
     return hexport
 }
-
